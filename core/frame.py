@@ -23,9 +23,8 @@ def frame_to_image(frame):
 def save_frames(frames, folder):
     folder=Path(folder)
     folder.mkdir(parents=True,exist_ok=True,)
-    digits = len(str(len(frames)))
     for i, frame in enumerate(frames):
-        frame_to_image(frame).save(folder/f"frame_{i:0{digits}}.png")
+        frame_to_image(frame).save(folder/f"frame_{i}.png")
 def image_to_frame(path):
     img = Image.open(path)
     arr = np.asarray(img,dtype=np.uint8,)
