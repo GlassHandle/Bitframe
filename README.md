@@ -1,19 +1,20 @@
 # BitFrame
 
-BitFrame is an experimental binary-to-video encoder that converts any file into a sequence of lossless video frames and reconstructs the original file without data loss.
+BitFrame is an experimental binary-to-video encoder that converts arbitrary files into a sequence of lossless video frames and reconstructs the original file without data loss.
 
-The project explores video as a storage medium rather than a visual one, where every pixel represents binary data instead of image content.
+Rather than storing visual information, BitFrame treats every pixel as binary data, effectively using video as a portable lossless storage medium.
 
 ---
 
 ## Features
 
-* Encode any file into a lossless video
-* Decode the video back into the original file
-* Preserve original filename and file size
-* SHA-256 integrity verification
-* Modular architecture
-* Designed for future extensions
+- Encode any file into a lossless video
+- Decode the video back into the original file
+- Preserve original filename and file size
+- SHA-256 integrity verification
+- Optional deterministic seeded frame transformation
+- Modular architecture
+- Designed for future extensions
 
 ---
 
@@ -38,8 +39,8 @@ The project explores video as a storage medium rather than a visual one, where e
         │
         ▼
  ┌──────────────┐
- │ Build Metadata│
- └──────┬────────┘
+ │Build Metadata│
+ └──────┬───────┘
         │
         ▼
  ┌──────────────┐
@@ -55,6 +56,11 @@ The project explores video as a storage medium rather than a visual one, where e
  ┌──────────────┐
  │ Split Frames │
  └──────┬───────┘
+        │
+        ▼
+ ┌────────────────────┐
+ │Frame Transformation│
+ └──────┬─────────────┘
         │
         ▼
  ┌──────────────┐
@@ -80,6 +86,11 @@ The project explores video as a storage medium rather than a visual one, where e
  └──────┬───────┘
         │
         ▼
+ ┌────────────────────┐
+ │Reverse Transform   │
+ └──────┬─────────────┘
+        │
+        ▼
  ┌──────────────┐
  │ Read Bits    │
  └──────┬───────┘
@@ -96,8 +107,8 @@ The project explores video as a storage medium rather than a visual one, where e
         │
         ▼
  ┌──────────────┐
- │ Parse Metadata│
- └──────┬────────┘
+ │Parse Metadata│
+ └──────┬───────┘
         │
         ▼
  ┌──────────────┐
@@ -112,25 +123,25 @@ The project explores video as a storage medium rather than a visual one, where e
 
 ---
 
-## Binary Format
+## BitFrame Format Specification
 
 ### Header
 
-| Offset | Size | Description     |
-| -----: | ---: | --------------- |
-|      0 |    4 | Magic Number    |
-|      4 |    2 | Version         |
-|      6 |    2 | Flags           |
-|      8 |    8 | Metadata Length |
+| Offset | Size | Description |
+|------:|----:|-------------|
+| 0 | 4 | Magic Number |
+| 4 | 2 | Version |
+| 6 | 2 | Flags |
+| 8 | 8 | Metadata Length |
 
 ### Metadata
 
-| Field           | Type     |
-| --------------- | -------- |
-| Filename Length | uint16   |
-| Filename        | bytes    |
-| Content Length  | uint64   |
-| SHA-256         | 32 bytes |
+| Field | Type |
+|------|------|
+| Filename Length | uint16 |
+| Filename | bytes |
+| Content Length | uint64 |
+| SHA-256 | 32 bytes |
 
 ### Payload
 
@@ -143,6 +154,16 @@ The project explores video as a storage medium rather than a visual one, where e
 | Original File  |
 +----------------+
 ```
+
+---
+
+## Frame Transformation
+
+BitFrame optionally supports deterministic frame transformation using a user-provided seed.
+
+The first frame is intentionally left unmodified to preserve the metadata required for decoding. Every subsequent frame is transformed using a deterministic permutation generated from the supplied seed.
+
+Using the same seed during decoding reconstructs the original frames exactly. Using an incorrect seed produces an invalid reconstruction, which is detected automatically through SHA-256 verification.
 
 ---
 
@@ -165,61 +186,101 @@ BitFrame
 ├── decoder
 │   └── decoder.py
 │
+├── transform
+│   ├── __init__.py
+│   ├── permutation.py
+│   ├── seed.py
+│   └── transform.py
+│
 ├── frames
 ├── output
 ├── temp
 │
 ├── main.py
 ├── requirements.txt
-└── README.md
+├── README.md
+└── LICENSE
 ```
+
 ---
+
 ## Installation
+
 ```bash
 git clone https://github.com/GlassHandle/BitFrame.git
 cd BitFrame
 pip install -r requirements.txt
 ```
+
 Install FFmpeg and ensure it is available in your system PATH.
+
 ---
+
 ## Usage
+
 Encode a file:
+
 ```bash
 python main.py encode <input_file>
 ```
-Specify an output video:
+
+Encode using frame transformation:
+
+```bash
+python main.py encode <input_file> --transform-seed 42
+```
+
+Specify an output file:
+
 ```bash
 python main.py encode <input_file> -o output/output.mkv
 ```
+
 Decode a video:
+
 ```bash
 python main.py decode <input_video>
 ```
+
+Decode a transformed video:
+
+```bash
+python main.py decode <input_video> --transform-seed 42
+```
+
 Specify an output directory:
+
 ```bash
 python main.py decode <input_video> -o recovered/
 ```
+
 ---
+
 ## Roadmap
-* [x] Binary header
-* [x] Metadata serialization
-* [x] Bitstream generation
-* [x] Frame generation
-* [x] Lossless video encoding
-* [x] Video decoding
-* [x] SHA-256 verification
+
+### Completed
+
+- [x] Binary header
+- [x] Metadata serialization
+- [x] Bitstream generation
+- [x] Frame generation
+- [x] Deterministic frame transformation
+- [x] Lossless FFV1 video encoding
+- [x] Lossless video decoding
+- [x] SHA-256 integrity verification
+
 ### Planned
-* [ ] Frame numbering
-* [ ] CRC per frame
-* [ ] Synchronization markers
-* [ ] Reed–Solomon error correction
-* [ ] Compression
-* [ ] AES encryption
-* [ ] Streaming encoder
-* [ ] Multi-threaded processing
-* [ ] GPU acceleration
-* [ ] Graphical interface
+
+- [ ] Compression
+- [ ] Multiple transformation algorithms
+- [ ] Reed–Solomon error correction
+- [ ] Frame synchronization markers
+- [ ] Streaming encoder
+- [ ] Multi-threaded processing
+- [ ] GPU acceleration
+- [ ] Graphical interface
+- [ ] Performance benchmarks
 
 ---
 ## License
-MIT License.
+This project is licensed under the MIT License.
